@@ -14,6 +14,13 @@ env:
   AZURE_WEBAPP_NAME: webapp-springboot-demo
   JAVA_VERSION: '17'
   AZURE_RESOURCE_GROUP: rg-springboot-demo
+  AZURE_CLIENT_ID: 6b9903ab-ab12-4ddb-9f85-2ad49ee8487c
+  AZURE_TENANT_ID: 5b973f99-77df-4beb-b27d-aa0c70b8482c
+  AZURE_SUBSCRIPTION_ID: 931db222-3f2f-4181-8f9f-375729be7467
+
+permissions:
+  id-token: write
+  contents: read
 
 jobs:
   build:
@@ -56,10 +63,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Azure Login
+      - name: Azure Login (OIDC)
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
 
       - name: Create Resource Group
         uses: azure/cli@v2
@@ -72,7 +81,7 @@ jobs:
         id: deploy
         uses: azure/arm-deploy@v2
         with:
-          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          subscriptionId: ${{ env.AZURE_SUBSCRIPTION_ID }}
           resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
           template: ./infra/main.bicep
           parameters: ./infra/parameters.json
@@ -91,10 +100,12 @@ jobs:
           name: java-app
           path: target
 
-      - name: Azure Login
+      - name: Azure Login (OIDC)
         uses: azure/login@v2
         with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          client-id: ${{ env.AZURE_CLIENT_ID }}
+          tenant-id: ${{ env.AZURE_TENANT_ID }}
+          subscription-id: ${{ env.AZURE_SUBSCRIPTION_ID }}
 
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
