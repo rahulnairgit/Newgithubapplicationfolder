@@ -1,0 +1,21 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": {
+      "value": "eastus"
+    },
+    "appServicePlanName": {
+      "value": "asp-springboot-demo"
+    },
+    "webAppName": {
+      "value": "webapp-springboot-demo"
+    },
+    "sku": {
+      "value": "B1"
+    },
+    "javaVersion": {
+      "value": "17"
+    }
+  }
+}
