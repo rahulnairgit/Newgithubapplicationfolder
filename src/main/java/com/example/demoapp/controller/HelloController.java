@@ -14,7 +14,7 @@ public class HelloController {
     @GetMapping("/")
     public Map<String, Object> home() {
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "Welcome to Spring Boot Demo App!");
+        response.put("message", "Welcome to Rahul's Spring Boot Demo App - Learning GitHub PRs!");
         response.put("timestamp", LocalDateTime.now().toString());
         response.put("status", "Running");
         return response;
