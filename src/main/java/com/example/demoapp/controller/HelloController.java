@@ -32,6 +32,7 @@ public class HelloController {
         Map<String, Object> response = new HashMap<>();
         response.put("application", "Spring Boot Demo App");
         response.put("version", "1.0.0");
+        response.put("author", "Rahul Nair");
         response.put("java_version", System.getProperty("java.version"));
         response.put("platform", "Azure Web App");
         return response;
