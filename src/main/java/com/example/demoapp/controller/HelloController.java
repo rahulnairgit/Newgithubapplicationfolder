@@ -14,7 +14,8 @@ public class HelloController {
     @GetMapping("/")
     public Map<String, Object> home() {
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "TEST - This should NOT appear on website!");
+        response.put("message", "Deployed using GitHub Environment Secrets!");
+        response.put("environment", "Dev");
         response.put("timestamp", LocalDateTime.now().toString());
         response.put("status", "Running");
         return response;
