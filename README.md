@@ -1,10 +1,167 @@
-# Spring Boot Demo App - Azure Deployment
+# Spring Boot Azure CI/CD Learning Project
 
-A simple Spring Boot application with Azure Web App deployment using Bicep infrastructure as code.
+A hands-on learning project demonstrating end-to-end CI/CD pipeline with GitHub Actions, Azure OIDC authentication, and Infrastructure as Code.
+
+---
+
+## What I Learned
+
+### 1. GitHub Actions Fundamentals
+
+| Concept | Description |
+|---------|-------------|
+| **Workflow** | YAML file (`.github/workflows/*.yml`) that defines automation |
+| **Jobs** | Groups of tasks that run on a runner (e.g., `build`, `deploy`) |
+| **Steps** | Individual actions within a job |
+| **Triggers** | Events that start the workflow (`push`, `pull_request`, `workflow_dispatch`) |
+
+**Key syntax:**
+```yaml
+on:
+  push:
+    branches: [main]      # Triggers on push to main
+  workflow_dispatch:      # Manual trigger button
+```
+
+### 2. Pipeline Flow
+
+```
+┌─────────────┐     ┌──────────────────────┐     ┌─────────────┐
+│   BUILD     │────▶│ DEPLOY INFRASTRUCTURE│────▶│ DEPLOY APP  │
+│             │     │                      │     │             │
+│ • Checkout  │     │ • Azure Login        │     │ • Download  │
+│ • Setup Java│     │ • Create RG          │     │   artifact  │
+│ • Maven     │     │ • Deploy Bicep       │     │ • Azure     │
+│ • Test      │     │                      │     │   Login     │
+│ • Upload JAR│     │                      │     │ • Deploy    │
+└─────────────┘     └──────────────────────┘     └─────────────┘
+```
+
+### 3. Artifacts
+
+- **Purpose**: Pass files between jobs (jobs run on different machines)
+- **Upload**: `actions/upload-artifact@v4` — saves build output
+- **Download**: `actions/download-artifact@v4` — retrieves in another job
+
+```yaml
+- uses: actions/upload-artifact@v4
+  with:
+    name: java-app
+    path: target/*.jar
+```
+
+### 4. Job Dependencies
+
+```yaml
+deploy-app:
+  needs: [build, deploy-infrastructure]  # Waits for both jobs
+```
+
+### 5. Azure OIDC Authentication (Passwordless)
+
+**Traditional way**: Store client secret in GitHub (security risk)
+
+**OIDC way**: GitHub proves its identity to Azure without secrets
+
+**Flow:**
+```
+GitHub Actions                    Azure
+     │                              │
+     │ 1. "I'm workflow X from     │
+     │    repo Y, branch main"     │
+     │─────────────────────────────▶│
+     │                              │
+     │ 2. Checks federated         │
+     │    credential matches       │
+     │◀─────────────────────────────│
+     │                              │
+     │ 3. Returns temporary token  │
+     │◀─────────────────────────────│
+```
+
+**Requirements:**
+- App Registration in Azure AD
+- Federated Credential configured for repo/branch/environment
+- `permissions: id-token: write` in workflow
+
+### 6. Secrets Management
+
+| Type | Scope | Approval Gates | Use Case |
+|------|-------|----------------|----------|
+| **Repository Secrets** | All workflows | No | Development/testing |
+| **Environment Secrets** | Specific environment | Yes (optional) | Production with controls |
+
+**Environment benefits:**
+- Required reviewers (approval before deploy)
+- Wait timers
+- Branch restrictions
+
+### 7. Federated Credentials
+
+Different GitHub contexts need different credentials:
+
+| Entity Type | Subject Identifier |
+|-------------|-------------------|
+| Branch | `repo:owner/repo:ref:refs/heads/main` |
+| Environment | `repo:owner/repo:environment:Dev` |
+| Pull Request | `repo:owner/repo:pull_request` |
+
+When using `environment: Dev` in workflow, must create matching federated credential.
+
+### 8. Infrastructure as Code (Bicep)
+
+**What**: Azure's native language to define infrastructure
+
+**Benefits:**
+- Version controlled
+- Repeatable deployments
+- No manual portal clicking
+
+**Example:**
+```bicep
+resource webApp 'Microsoft.Web/sites@2022-03-01' = {
+  name: webAppName
+  location: location
+  properties: {
+    serverFarmId: appServicePlan.id
+  }
+}
+```
+
+### 9. Spring Boot Basics
+
+**Endpoints** (defined in code):
+```java
+@RestController
+public class HelloController {
+    @GetMapping("/hello")
+    public Map<String, String> hello(@RequestParam String name) {
+        // handles GET /hello?name=xxx
+    }
+}
+```
+
+**Configuration** (`application.properties`):
+```properties
+server.port=8080
+spring.application.name=demo-app
+management.endpoints.web.exposure.include=health,info
+```
+
+| Annotation | Purpose |
+|------------|---------|
+| `@RestController` | Handles HTTP requests, returns JSON |
+| `@GetMapping("/path")` | Maps GET requests to this method |
+| `@RequestParam` | Reads query parameters from URL |
+
+---
 
 ## Project Structure
 
 ```
+├── .github/
+│   └── workflows/
+│       └── deploy.yml          # CI/CD pipeline
 ├── src/
 │   └── main/
 │       ├── java/
@@ -15,39 +172,85 @@ A simple Spring Boot application with Azure Web App deployment using Bicep infra
 │       └── resources/
 │           └── application.properties
 ├── infra/
-│   ├── main.bicep          # Azure infrastructure definition
-│   └── parameters.json     # Deployment parameters
-├── pom.xml                 # Maven configuration
-├── deploy.ps1              # PowerShell deployment script
+│   ├── main.bicep              # Azure infrastructure
+│   └── parameters.json         # Deployment parameters
+├── pom.xml                     # Maven configuration
 └── README.md
 ```
 
+---
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Homepage with deployment info |
+| `/hello` | GET | Greeting (use `?name=xxx` for custom name) |
+| `/api/info` | GET | Application metadata |
+| `/actuator/health` | GET | Health check (built-in) |
+
+---
+
 ## Prerequisites
 
-1. **Java 17** or later
-2. **Maven 3.8+** (or use the provided Maven wrapper)
-3. **Azure CLI** - [Install Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli)
-4. **Azure Subscription** - Visual Studio subscription configured
+1. **Java 17+**
+2. **Maven 3.8+**
+3. **Azure CLI**
+4. **Azure Subscription**
+5. **GitHub Account**
+
+---
+
+## Azure Setup Requirements
+
+1. **App Registration** with federated credentials for:
+   - Branch: `refs/heads/main`
+   - Environment: `Dev` (or your environment name)
+
+2. **Required permissions** on App Registration:
+   - Reader at subscription level (or higher)
+   - Contributor on resource group
+
+3. **GitHub Secrets** (in environment):
+   - `AZURE_CLIENT_ID`
+   - `AZURE_TENANT_ID`
+   - `AZURE_SUBSCRIPTION_ID`
+
+---
 
 ## Local Development
 
-### Build the application
 ```bash
+# Build
 mvn clean package
-```
 
-### Run locally
-```bash
+# Run locally
 mvn spring-boot:run
+
+# Access at http://localhost:8080
 ```
 
-The application will start at `http://localhost:8080`
+---
 
-### API Endpoints
+## Key Learnings Summary
 
-| Endpoint | Description |
-|----------|-------------|
-| `GET /` | Welcome message with timestamp |
+- CI/CD automates build, test, and deployment
+- OIDC is more secure than storing secrets
+- GitHub Environments provide deployment controls
+- Infrastructure as Code makes deployments repeatable
+- Different federated credentials needed for branches vs environments
+- Spring Boot annotations define API endpoints
+- Configuration and code serve different purposes
+
+---
+
+## Author
+
+Rahul Nair
+
+## Date
+
+April 2026
 | `GET /hello?name={name}` | Personalized greeting |
 | `GET /api/info` | Application information |
 | `GET /actuator/health` | Health check endpoint |

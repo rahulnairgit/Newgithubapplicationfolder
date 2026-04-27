@@ -3,16 +3,16 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "environment": {
-      "value": "dev"
+      "value": "prod"
     },
     "location": {
       "value": "eastus"
     },
     "appServicePlanName": {
-      "value": "asp-springboot-demo-dev"
+      "value": "asp-springboot-demo-prod"
     },
     "webAppName": {
-      "value": "webapp-springboot-demo-dev"
+      "value": "webapp-springboot-demo-prod"
     },
     "sku": {
       "value": "B1"

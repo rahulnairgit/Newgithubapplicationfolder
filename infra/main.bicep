@@ -1,14 +1,21 @@
 // Azure Web App Infrastructure for Spring Boot Application
 // Subscription: 931db222-3f2f-4181-8f9f-375729be7467
 
+@description('Environment name (dev or prod)')
+@allowed([
+  'dev'
+  'prod'
+])
+param environment string = 'dev'
+
 @description('Location for all resources')
 param location string = resourceGroup().location
 
 @description('Name of the App Service Plan')
-param appServicePlanName string = 'asp-demo-app'
+param appServicePlanName string = 'asp-demo-app-${environment}'
 
 @description('Name of the Web App')
-param webAppName string = 'webapp-springboot-demo-${uniqueString(resourceGroup().id)}'
+param webAppName string = 'webapp-springboot-demo-${environment}'
 
 @description('SKU of the App Service Plan')
 @allowed([
@@ -81,3 +88,4 @@ output webAppUrl string = 'https://${webApp.properties.defaultHostName}'
 output webAppName string = webApp.name
 output appServicePlanName string = appServicePlan.name
 output resourceGroupLocation string = location
+output environmentName string = environment

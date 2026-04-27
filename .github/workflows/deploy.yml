@@ -1,21 +1,20 @@
 # GitHub Actions workflow for Spring Boot Azure Web App deployment
+# Multi-environment: develop branch → Dev, main branch → Production
 name: Build and Deploy to Azure
 
 on:
   push:
     branches:
       - main
+      - develop
   pull_request:
     branches:
       - main
+      - develop
   workflow_dispatch:  # Allow manual trigger
 
 env:
-  AZURE_WEBAPP_NAME: webapp-springboot-demo
   JAVA_VERSION: '17'
-  AZURE_RESOURCE_GROUP: Test
-  # Azure credentials stored in GitHub Secrets (Settings → Secrets → Actions)
-  # AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
 
 permissions:
   id-token: write
@@ -49,10 +48,84 @@ jobs:
           name: java-app
           path: target/*.jar
 
-  deploy-infrastructure:
-    name: Deploy Azure Infrastructure
+  # ============================================
+  # DEVELOPMENT ENVIRONMENT (develop branch → Test RG)
+  # ============================================
+  deploy-infrastructure-dev:
+    name: Deploy Infrastructure (Dev)
     runs-on: ubuntu-latest
     environment: Dev
+    needs: build
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    
+    outputs:
+      webAppName: ${{ steps.deploy.outputs.webAppName }}
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Create Resource Group
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az group create --name Test --location eastus
+
+      - name: Deploy Bicep
+        id: deploy
+        uses: azure/arm-deploy@v2
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: Test
+          template: ./infra/main.bicep
+          parameters: ./infra/parameters.json
+          failOnStdErr: false
+
+  deploy-app-dev:
+    name: Deploy Application (Dev)
+    runs-on: ubuntu-latest
+    environment: Dev
+    needs: [build, deploy-infrastructure-dev]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: java-app
+          path: target
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Web App (Dev)
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: ${{ needs.deploy-infrastructure-dev.outputs.webAppName || 'webapp-springboot-demo-dev' }}
+          package: target/*.jar
+
+      - name: Azure Logout
+        run: az logout
+
+  # ============================================
+  # PRODUCTION ENVIRONMENT (main branch → PRODUCTION RG)
+  # ============================================
+  deploy-infrastructure-prod:
+    name: Deploy Infrastructure (Prod)
+    runs-on: ubuntu-latest
+    environment: Production
     needs: build
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
@@ -75,23 +148,23 @@ jobs:
         with:
           azcliversion: latest
           inlineScript: |
-            az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location eastus
+            az group create --name PRODUCTION --location eastus
 
       - name: Deploy Bicep
         id: deploy
         uses: azure/arm-deploy@v2
         with:
           subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
+          resourceGroupName: PRODUCTION
           template: ./infra/main.bicep
-          parameters: ./infra/parameters.json
+          parameters: ./infra/parameters-prod.json
           failOnStdErr: false
 
-  deploy-app:
-    name: Deploy Application
+  deploy-app-prod:
+    name: Deploy Application (Prod)
     runs-on: ubuntu-latest
-    environment: Dev
-    needs: [build, deploy-infrastructure]
+    environment: Production
+    needs: [build, deploy-infrastructure-prod]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     
     steps:
@@ -108,10 +181,10 @@ jobs:
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
           subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
-      - name: Deploy to Azure Web App
+      - name: Deploy to Azure Web App (Prod)
         uses: azure/webapps-deploy@v3
         with:
-          app-name: ${{ needs.deploy-infrastructure.outputs.webAppName || env.AZURE_WEBAPP_NAME }}
+          app-name: ${{ needs.deploy-infrastructure-prod.outputs.webAppName || 'webapp-springboot-demo-prod' }}
           package: target/*.jar
 
       - name: Azure Logout
