@@ -1,0 +1,108 @@
+# Infrastructure Deployment
+# Deploys Azure resources using Bicep
+# Runs when infra files change or manually triggered
+name: Infrastructure - Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'infra/**'
+      - '.github/workflows/infrastructure.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - dev
+          - prod
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-infra-dev:
+    name: Deploy Infrastructure (Dev)
+    runs-on: ubuntu-latest
+    environment: Dev
+    if: github.ref == 'refs/heads/develop' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Create Resource Group
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az group create --name Test --location eastus
+
+      - name: Deploy Bicep
+        id: deploy
+        uses: azure/arm-deploy@v2
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: Test
+          template: ./infra/main.bicep
+          parameters: ./infra/parameters.json
+          failOnStdErr: false
+
+      - name: Output Web App Name
+        run: |
+          echo "### Infrastructure Deployed! :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "- Resource Group: Test" >> $GITHUB_STEP_SUMMARY
+          echo "- Web App: ${{ steps.deploy.outputs.webAppName }}" >> $GITHUB_STEP_SUMMARY
+
+  deploy-infra-prod:
+    name: Deploy Infrastructure (Prod)
+    runs-on: ubuntu-latest
+    environment: Production
+    if: github.ref == 'refs/heads/main' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod')
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Azure Login (OIDC)
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Create Resource Group
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            az group create --name PRODUCTION --location eastus
+
+      - name: Deploy Bicep
+        id: deploy
+        uses: azure/arm-deploy@v2
+        with:
+          subscriptionId: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: PRODUCTION
+          template: ./infra/main.bicep
+          parameters: ./infra/parameters-prod.json
+          failOnStdErr: false
+
+      - name: Output Web App Name
+        run: |
+          echo "### Infrastructure Deployed! :rocket:" >> $GITHUB_STEP_SUMMARY
+          echo "- Resource Group: PRODUCTION" >> $GITHUB_STEP_SUMMARY
+          echo "- Web App: ${{ steps.deploy.outputs.webAppName }}" >> $GITHUB_STEP_SUMMARY
