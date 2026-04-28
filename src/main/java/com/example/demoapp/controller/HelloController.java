@@ -14,10 +14,11 @@ public class HelloController {
     @GetMapping("/")
     public Map<String, Object> home() {
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "Deployed using GitHub Environment Secrets!");
+        response.put("message", "Multi-Environment Deployment Working!");
+        response.put("version", "2.0.0");
         response.put("environment", "Dev");
         response.put("timestamp", LocalDateTime.now().toString());
-        response.put("status", "Running");
+        response.put("status", "Healthy");
         return response;
     }
 
