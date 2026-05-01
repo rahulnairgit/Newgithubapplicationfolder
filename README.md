@@ -7,6 +7,66 @@ A hands-on learning project demonstrating end-to-end CI/CD pipeline with GitHub 
 
 ## What I Learned
 
+### 0. Connecting Local Machine to GitHub Repository
+
+**Option A: Start locally, then push to GitHub (what we did)**
+
+```bash
+# 1. Create and navigate to your project folder
+mkdir my-project
+cd my-project
+
+# 2. Initialize Git in your local folder
+git init
+
+# 3. Add your code files, then stage and commit
+git add .
+git commit -m "Initial commit"
+
+# 4. Create an empty repo on GitHub (via browser or CLI)
+#    Then link your local repo to GitHub:
+git remote add origin https://github.com/your-username/your-repo-name.git
+
+# 5. Push your code to GitHub
+git push -u origin main
+```
+
+**Option B: Start from GitHub, then clone locally**
+
+```bash
+# 1. Create repo on GitHub first (with or without README)
+# 2. Clone it to your local machine
+git clone https://github.com/your-username/your-repo-name.git
+
+# 3. Navigate into the folder and start coding
+cd your-repo-name
+```
+
+**Verify the connection:**
+```bash
+git remote -v
+# Shows: origin  https://github.com/your-username/your-repo-name.git (fetch)
+#        origin  https://github.com/your-username/your-repo-name.git (push)
+```
+
+**Visual flow:**
+```
+┌─────────────────────┐         ┌─────────────────────┐
+│   LOCAL MACHINE     │         │   GITHUB            │
+│   ─────────────     │         │   ──────            │
+│                     │         │                     │
+│   my-project/       │ remote  │   your-username/    │
+│     .git/        ◄──┼─────────┼─► your-repo-name    │
+│     src/            │ "origin"│                     │
+│     pom.xml         │         │                     │
+└─────────────────────┘         └─────────────────────┘
+        │                               ▲
+        │  git push origin main         │
+        └───────────────────────────────┘
+```
+
+---
+
 ### 1. GitHub Actions Fundamentals
 
 | Concept | Description |
