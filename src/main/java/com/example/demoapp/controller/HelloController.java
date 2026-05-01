@@ -1,6 +1,6 @@
 package com.example.demoapp.controller;
 
-// Version 3.0 - Testing Split Workflows
+// Version 5.0 - Feature Branch Test May 2026
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -13,16 +13,26 @@ import java.util.Map;
 @RestController
 public class HelloController {
 
-    private static final String VERSION = "3.0.0";
+    private static final String VERSION = "5.0.0";
 
     @GetMapping("/")
     public Map<String, Object> home() {
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "Split Workflows Test - Version " + VERSION);
+        response.put("message", "Feature Branch Test - Version " + VERSION);
         response.put("version", VERSION);
-        response.put("feature", "PR Flow Testing");
+        response.put("feature", "PR Workflow Demo");
         response.put("timestamp", LocalDateTime.now().toString());
-        response.put("status", "Deployed Successfully");
+        response.put("status", "Deployed via PR!");
+        return response;
+    }
+
+    @GetMapping("/greeting")
+    public Map<String, Object> greeting(@RequestParam(value = "name", defaultValue = "Developer") String name) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("greeting", "Welcome, " + name + "!");
+        response.put("message", "This endpoint was added via a Pull Request");
+        response.put("version", VERSION);
+        response.put("timestamp", LocalDateTime.now().toString());
         return response;
     }
 
