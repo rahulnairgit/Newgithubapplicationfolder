@@ -1,6 +1,6 @@
 package com.example.demoapp.controller;
 
-// Version 3.0 - Testing Split Workflows
+// Version 4.0 - Pipeline Test May 2026
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -13,14 +13,14 @@ import java.util.Map;
 @RestController
 public class HelloController {
 
-    private static final String VERSION = "3.0.0";
+    private static final String VERSION = "4.0.0";
 
     @GetMapping("/")
     public Map<String, Object> home() {
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "Split Workflows Test - Version " + VERSION);
+        response.put("message", "Pipeline Test - Version " + VERSION);
         response.put("version", VERSION);
-        response.put("feature", "PR Flow Testing");
+        response.put("feature", "Full Pipeline Flow Test");
         response.put("timestamp", LocalDateTime.now().toString());
         response.put("status", "Deployed Successfully");
         return response;
