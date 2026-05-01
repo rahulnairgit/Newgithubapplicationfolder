@@ -67,6 +67,118 @@ git remote -v
 
 ---
 
+### 0.1 Git Commands Cheat Sheet
+
+#### Setup & Configuration
+
+| Command | Description |
+|---------|-------------|
+| `git config --global user.name "Your Name"` | Set your name for commits |
+| `git config --global user.email "you@email.com"` | Set your email for commits |
+| `git config --list` | View all Git settings |
+| `git init` | Initialize a new Git repo in current folder |
+| `git clone <url>` | Download a repo from GitHub to local |
+
+#### Basic Workflow (Daily Use)
+
+| Command | Description |
+|---------|-------------|
+| `git status` | Show changed/staged files |
+| `git add <file>` | Stage a specific file |
+| `git add .` | Stage all changes |
+| `git commit -m "message"` | Commit staged changes with message |
+| `git push origin <branch>` | Upload commits to GitHub |
+| `git pull origin <branch>` | Download & merge changes from GitHub |
+
+#### Branching
+
+| Command | Description |
+|---------|-------------|
+| `git branch` | List local branches |
+| `git branch -a` | List all branches (local + remote) |
+| `git branch <name>` | Create a new branch |
+| `git checkout <branch>` | Switch to a branch |
+| `git checkout -b <name>` | Create AND switch to new branch |
+| `git merge <branch>` | Merge branch into current branch |
+| `git branch -d <name>` | Delete a local branch |
+
+#### Remote Operations
+
+| Command | Description |
+|---------|-------------|
+| `git remote -v` | Show connected remote repos |
+| `git remote add origin <url>` | Link local repo to GitHub |
+| `git fetch origin` | Download changes (don't merge) |
+| `git pull origin <branch>` | Download AND merge (fetch + merge) |
+| `git push origin <branch>` | Upload local commits to GitHub |
+| `git push -u origin <branch>` | Push and set upstream tracking |
+
+#### Viewing History
+
+| Command | Description |
+|---------|-------------|
+| `git log` | Show commit history |
+| `git log --oneline` | Compact commit history |
+| `git log --graph` | Visual branch history |
+| `git diff` | Show unstaged changes |
+| `git diff --staged` | Show staged changes |
+| `git show <commit-id>` | Show details of a commit |
+
+#### Undoing Changes
+
+| Command | Description |
+|---------|-------------|
+| `git checkout -- <file>` | Discard changes in file (unstaged) |
+| `git reset HEAD <file>` | Unstage a file |
+| `git reset --soft HEAD~1` | Undo last commit, keep changes staged |
+| `git reset --hard HEAD~1` | Undo last commit, discard changes |
+| `git revert <commit-id>` | Create new commit that undoes a commit |
+| `git stash` | Temporarily save uncommitted changes |
+| `git stash pop` | Restore stashed changes |
+
+#### Common Workflows
+
+**Feature Branch Workflow:**
+```bash
+# 1. Start from develop
+git checkout develop
+git pull origin develop
+
+# 2. Create feature branch
+git checkout -b feature/my-feature
+
+# 3. Make changes, commit
+git add .
+git commit -m "feat: add new feature"
+
+# 4. Push feature branch
+git push origin feature/my-feature
+
+# 5. Create PR on GitHub, then merge
+
+# 6. Clean up after merge
+git checkout develop
+git pull origin develop
+git branch -d feature/my-feature
+```
+
+**Quick Visual Reference:**
+```
+Working Directory    Staging Area    Local Repo    Remote (GitHub)
+       │                  │               │               │
+       │   git add .      │               │               │
+       │─────────────────►│               │               │
+       │                  │  git commit   │               │
+       │                  │──────────────►│               │
+       │                  │               │   git push    │
+       │                  │               │──────────────►│
+       │                  │               │               │
+       │◄─────────────────┼───────────────┼───────────────│
+       │                git pull (fetch + merge)          │
+```
+
+---
+
 ### 1. GitHub Actions Fundamentals
 
 | Concept | Description |
